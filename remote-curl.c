@@ -39,8 +39,10 @@ struct options {
 		/* One of the SEND_PACK_PUSH_CERT_* constants. */
 		push_cert : 2,
 		deepen_relative : 1,
+
+		/* see documentation of corresponding flag in fetch-pack.h */
 		from_promisor : 1,
-		no_dependents : 1,
+
 		atomic : 1,
 		object_format : 1;
 	const struct git_hash_algo *hash_algo;
@@ -121,7 +123,11 @@ static int set_option(const char *name, const char *value)
 	}
 	else if (!strcmp(name, "cas")) {
 		struct strbuf val = STRBUF_INIT;
-		strbuf_addf(&val, "--" CAS_OPT_NAME "=%s", value);
+		strbuf_addstr(&val, "--force-with-lease=");
+		if (*value != '"')
+			strbuf_addstr(&val, value);
+		else if (unquote_c_style(&val, value, NULL))
+			return -1;
 		string_list_append(&cas_options, val.buf);
 		strbuf_release(&val);
 		return 0;
@@ -185,9 +191,6 @@ static int set_option(const char *name, const char *value)
 #endif /* LIBCURL_VERSION_NUM >= 0x070a08 */
 	} else if (!strcmp(name, "from-promisor")) {
 		options.from_promisor = 1;
-		return 0;
-	} else if (!strcmp(name, "no-dependents")) {
-		options.no_dependents = 1;
 		return 0;
 	} else if (!strcmp(name, "filter")) {
 		options.filter = xstrdup(value);
@@ -1171,8 +1174,6 @@ static int fetch_git(struct discovery *heads,
 		strvec_push(&args, "--deepen-relative");
 	if (options.from_promisor)
 		strvec_push(&args, "--from-promisor");
-	if (options.no_dependents)
-		strvec_push(&args, "--no-dependents");
 	if (options.filter)
 		strvec_pushf(&args, "--filter=%s", options.filter);
 	strvec_push(&args, url.buf);

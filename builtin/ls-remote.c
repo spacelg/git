@@ -84,6 +84,8 @@ int cmd_ls_remote(int argc, const char **argv, const char *prefix)
 			     PARSE_OPT_STOP_AT_NON_OPTION);
 	dest = argv[0];
 
+	UNLEAK(sorting);
+
 	git_config(git_default_config, NULL);
 	if (argc > 1) {
 		int i;
@@ -109,7 +111,6 @@ int cmd_ls_remote(int argc, const char **argv, const char *prefix)
 
 	if (get_url) {
 		printf("%s\n", *remote->url);
-		UNLEAK(sorting);
 		return 0;
 	}
 
@@ -124,10 +125,8 @@ int cmd_ls_remote(int argc, const char **argv, const char *prefix)
 		int hash_algo = hash_algo_by_ptr(transport_get_hash_algo(transport));
 		repo_set_hash_algo(the_repository, hash_algo);
 	}
-	if (transport_disconnect(transport)) {
-		UNLEAK(sorting);
+	if (transport_disconnect(transport))
 		return 1;
-	}
 
 	if (!dest && !quiet)
 		fprintf(stderr, "From %s\n", *remote->url);
@@ -152,7 +151,6 @@ int cmd_ls_remote(int argc, const char **argv, const char *prefix)
 		status = 0; /* we found something */
 	}
 
-	UNLEAK(sorting);
 	ref_array_clear(&ref_array);
 	return status;
 }
